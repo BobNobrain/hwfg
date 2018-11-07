@@ -2,11 +2,9 @@ module WfgLang
     ( Identifier
     , Value (..)
     , BinaryOperator (..)
-    , binaryOperatorFromString
-    , BinaryOperatorAssoc (..)
-    , binaryOperatorAssoc
+    -- , binaryOperatorFromString
     , UnaryOperator (..)
-    , unaryOperatorFromString
+    -- , unaryOperatorFromString
     , Expression (..)
     , Command (..)
     ) where
@@ -26,34 +24,31 @@ data BinaryOperator
     | BinMult
     | BinDiv
     | BinRemainder
+    | BinEq
+    | BinNEq
     | BinAnd
     | BinOr
     | BinXor
     deriving (Show, Eq)
 
-data BinaryOperatorAssoc = BOALeft | BOARight
-
-binaryOperatorFromString :: String -> BinaryOperator
-binaryOperatorFromString "+" = BinPlus
-binaryOperatorFromString "-" = BinMinus
-binaryOperatorFromString "*" = BinMult
-binaryOperatorFromString "/" = BinDiv
-binaryOperatorFromString "%" = BinRemainder
-binaryOperatorFromString "and" = BinAnd
-binaryOperatorFromString "or" = BinOr
-binaryOperatorFromString "xor" = BinXor
-
-binaryOperatorAssoc :: BinaryOperator -> BinaryOperatorAssoc
-binaryOperatorAssoc _ = BOALeft
+-- binaryOperatorFromString :: String -> BinaryOperator
+-- binaryOperatorFromString "+" = BinPlus
+-- binaryOperatorFromString "-" = BinMinus
+-- binaryOperatorFromString "*" = BinMult
+-- binaryOperatorFromString "/" = BinDiv
+-- binaryOperatorFromString "%" = BinRemainder
+-- binaryOperatorFromString "and" = BinAnd
+-- binaryOperatorFromString "or" = BinOr
+-- binaryOperatorFromString "xor" = BinXor
 
 data UnaryOperator
     = UnNot
     | UnMinus
     deriving (Show, Eq)
 
-unaryOperatorFromString :: String -> UnaryOperator
-unaryOperatorFromString "not" = UnNot
-unaryOperatorFromString "-" = UnMinus
+-- unaryOperatorFromString :: String -> UnaryOperator
+-- unaryOperatorFromString "not" = UnNot
+-- unaryOperatorFromString "-" = UnMinus
 
 data Expression
     = ExprValue Value
@@ -66,6 +61,8 @@ data Expression
 data Command
     = CmdOutput Expression
     | CmdAssign Identifier Expression
-    | CmdCondition Expression [Command] [Command]
-    | CmdWhileLoop Expression [Command]
+    | CmdCondition Expression Command Command
+    | CmdWhileLoop Expression Command
+    | CmdSequence [Command]
+    | CmdNoop
     deriving (Show, Eq)
