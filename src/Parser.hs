@@ -101,8 +101,13 @@ parseWfg :: String -> String -> Either ParseError Command
 parseWfg filename = parse wfgParser filename
 
 literal = fmap numberVal m_naturalOrFloat
+          <|> (m_reservedOp "-" >> (fmap numberValNeg m_naturalOrFloat))
           <|> (m_reserved "true" >> return (ValBool True))
           <|> (m_reserved "false" >> return (ValBool False))
+                where
+                    numberValNeg :: Either Integer Double -> Value
+                    numberValNeg (Left i) = numberVal (Left (-i))
+                    numberValNeg (Right d) = numberVal (Right (-d))
 
 parseInput :: String -> Either ParseError Value
 parseInput = parse literal "(input)"
