@@ -1,10 +1,10 @@
 module Parser
     ( parseWfg
+    , parseInput
     ) where
 
 import WfgLang
 
-import Control.Applicative((<*))
 import Text.Parsec
 import Text.Parsec.String
 import Text.Parsec.Expr
@@ -32,30 +32,31 @@ TokenParser{ parens = m_parens
            , reserved = m_reserved
            , semiSep = m_semiSep
            , semi = m_semi
+           , stringLiteral = m_stringLiteral
            , whiteSpace = m_whiteSpace } = makeTokenParser def
 
-numberExpr :: Either Integer Double -> Expression
-numberExpr (Left i) = ExprValue $ ValInt i
-numberExpr (Right d) = ExprValue $ ValDouble d
+numberVal :: Either Integer Double -> Value
+numberVal (Left i) = ValInt i
+numberVal (Right d) = ValDouble d
 
 exprParser :: Parser Expression
 exprParser = buildExpressionParser table term <?> "expression"
-table = [ [Infix (m_reservedOp "+"   >> return (ExprBinaryOp BinPlus     )) AssocLeft]
-        , [Infix (m_reservedOp "-"   >> return (ExprBinaryOp BinMinus    )) AssocLeft]
+table = [ [Prefix (m_reservedOp "-"   >> return (ExprUnaryOp UnMinus     ))]
+        , [Prefix (m_reservedOp "not" >> return (ExprUnaryOp UnNot       ))]
         , [Infix (m_reservedOp "*"   >> return (ExprBinaryOp BinMult     )) AssocLeft]
         , [Infix (m_reservedOp "/"   >> return (ExprBinaryOp BinDiv      )) AssocLeft]
         , [Infix (m_reservedOp "%"   >> return (ExprBinaryOp BinRemainder)) AssocLeft]
+        , [Infix (m_reservedOp "+"   >> return (ExprBinaryOp BinPlus     )) AssocLeft]
+        , [Infix (m_reservedOp "-"   >> return (ExprBinaryOp BinMinus    )) AssocLeft]
         , [Infix (m_reservedOp "=="  >> return (ExprBinaryOp BinEq       )) AssocLeft]
         , [Infix (m_reservedOp "!="  >> return (ExprBinaryOp BinNEq      )) AssocLeft]
         , [Infix (m_reservedOp "and" >> return (ExprBinaryOp BinAnd      )) AssocLeft]
         , [Infix (m_reservedOp "or"  >> return (ExprBinaryOp BinOr       )) AssocLeft]
         , [Infix (m_reservedOp "xor" >> return (ExprBinaryOp BinXor      )) AssocLeft]
-        , [Prefix (m_reservedOp "not" >> return (ExprUnaryOp UnNot  ))]
-        , [Prefix (m_reservedOp "-"   >> return (ExprUnaryOp UnMinus))]
         ]
 term = m_parens exprParser
        <|> fmap ExprIdentifier m_identifier
-       <|> fmap numberExpr m_naturalOrFloat
+       <|> fmap (\x -> ExprValue (numberVal x)) m_naturalOrFloat
        <|> (m_reserved "true" >> return (ExprValue $ ValBool True))
        <|> (m_reserved "false" >> return (ExprValue $ ValBool False))
        <|> (m_reserved "read" >> return ExprRead)
@@ -65,7 +66,6 @@ wfgParser = m_whiteSpace >> cmdParser where
     cmdParser :: Parser Command
     cmdParser = do
         cmds <- m_semiSep singleCmd
-        -- optional m_semi
         return $ CmdSequence cmds
     singleCmd = (eof >> return CmdNoop)
             <|> do { v <- m_identifier
@@ -99,3 +99,10 @@ wfgParser = m_whiteSpace >> cmdParser where
 
 parseWfg :: String -> String -> Either ParseError Command
 parseWfg filename = parse wfgParser filename
+
+literal = fmap numberVal m_naturalOrFloat
+          <|> (m_reserved "true" >> return (ValBool True))
+          <|> (m_reserved "false" >> return (ValBool False))
+
+parseInput :: String -> Either ParseError Value
+parseInput = parse literal "(input)"

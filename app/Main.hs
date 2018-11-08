@@ -3,10 +3,17 @@ module Main where
 import Text.ParserCombinators.Parsec
 import WfgLang
 import Parser
+import Interpreter
 
 printResult :: Either ParseError Command -> IO ()
 printResult (Left err) = putStrLn $ show err
 printResult (Right c) = putStrLn $ show c
+
+play :: String -> IO ()
+play code = do
+    let ast = parseWfg "(cli)" code
+    case ast of Left err -> putStrLn $ show err
+                Right cmd -> runWfg cmd
 
 main :: IO ()
 main = do
