@@ -1,0 +1,15 @@
+# simple fibonacci calculator
+
+n = read - 1;
+f1 = 0;
+f2 = 1;
+f3 = f1 + f2;
+
+while n != 0 do
+    f1 = f2;
+    f2 = f3;
+    f3 = f1 + f2;
+    n = n - 1;
+end
+
+output f3;
