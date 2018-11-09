@@ -1,6 +1,8 @@
 module Interpreter
     ( WfgError
     , runWfg
+    , runWfgWithState
+    , initializeMemory
     ) where
 
 import WfgLang
@@ -14,9 +16,11 @@ type Memory = H.BasicHashTable Identifier Value
 type WfgError = String
 
 
+initializeMemory = H.new
+
 runWfg :: Command -> IO ()
 runWfg cmd = do
-    memory <- H.new
+    memory <- initializeMemory
     runWfgWithState memory cmd
 
 
