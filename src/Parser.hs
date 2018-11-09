@@ -1,6 +1,7 @@
 module Parser
     ( parseWfg
     , parseInput
+    , parseExprOrCommand
     ) where
 
 import WfgLang
@@ -109,6 +110,7 @@ wfgParser = do
 parseWfg :: String -> String -> Either ParseError Command
 parseWfg filename = parse wfgParser filename
 
+
 literal = fmap numberVal m_naturalOrFloat
           <|> (m_reservedOp "-" >> (fmap numberValNeg m_naturalOrFloat))
           <|> (m_reserved "true" >> return (ValBool True))
@@ -120,3 +122,14 @@ literal = fmap numberVal m_naturalOrFloat
 
 parseInput :: String -> Either ParseError Value
 parseInput = parse literal "(input)"
+
+
+exprOrCommand :: Parser (Either Command Expression)
+exprOrCommand = fmap Left wfgParser <|> fmap Right (do
+    m_whiteSpace
+    e <- exprParser
+    eof
+    return e)
+
+parseExprOrCommand :: String -> String -> Either ParseError (Either Command Expression)
+parseExprOrCommand filename = parse exprOrCommand filename

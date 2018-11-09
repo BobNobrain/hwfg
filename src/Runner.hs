@@ -32,12 +32,12 @@ runWithMode (ModeRunFile filename) = do
     where
         startInterpreter (Left err) = fail $ show err
         startInterpreter (Right ast) = do
-            print ast
+            -- print ast
             runWfg ast
 
 runWithMode ModeRunInteractive = do
     memory <- initializeMemory
-    forever $ readCommand "" >>= runWfgWithState memory
+    forever $ readCommand "" >>= eval memory
     where
         readCommand str = do
             putStr (if str == "" then "wfg>" else "...>")
@@ -45,5 +45,11 @@ runWithMode ModeRunInteractive = do
             newData <- getLine
             when (newData == ":exit") (exitWith ExitSuccess)
             let fullCode = (str ++ "\n" ++ newData)
-            case parseWfg "(input)" fullCode of Left err -> readCommand fullCode
-                                                Right ast -> return ast
+            case parseExprOrCommand "(input)" fullCode of Left err -> readCommand fullCode
+                                                          Right eoc -> return eoc
+
+        eval memory (Right expr) = do
+            val <- evalWfg memory expr
+            putStrLn $ show val
+
+        eval memory (Left cmd) = runWfgWithState memory cmd

@@ -2,6 +2,7 @@ module Interpreter
     ( WfgError
     , runWfg
     , runWfgWithState
+    , evalWfg
     , initializeMemory
     ) where
 
