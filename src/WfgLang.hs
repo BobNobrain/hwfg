@@ -2,9 +2,7 @@ module WfgLang
     ( Identifier
     , Value (..)
     , BinaryOperator (..)
-    -- , binaryOperatorFromString
     , UnaryOperator (..)
-    -- , unaryOperatorFromString
     , Expression (..)
     , Command (..)
     ) where
@@ -16,7 +14,14 @@ data Value
     | ValDouble Double
     | ValString String
     | ValBool Bool
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance Show Value where
+    show (ValInt i) = show i
+    show (ValDouble d) = show d
+    show (ValString str) = show str
+    show (ValBool True) = "true"
+    show (ValBool False) = "false"
 
 data BinaryOperator
     = BinPlus

@@ -1,3 +1,9 @@
-x = read;
-y = read;
-output x + y;
+x = 1;
+sum = 0;
+
+while x != 0 do
+    x = read;
+    sum = sum + x
+end;
+
+output sum;
