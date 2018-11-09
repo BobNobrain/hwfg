@@ -33,4 +33,6 @@ runWithMode (ModeRunFile filename) = do
     hClose fileH
 
 startInterpreter (Left err) = fail $ show err
-startInterpreter (Right ast) = runWfg ast
+startInterpreter (Right ast) = do
+    print ast
+    runWfg ast
