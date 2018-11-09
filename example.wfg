@@ -1,2 +1,3 @@
 x = read;
-output x;
+y = read;
+output x + y;

@@ -6,6 +6,7 @@ module Interpreter
 import WfgLang
 import StdLib
 import Parser (parseInput)
+import System.IO
 import Data.Hashable
 import qualified Data.HashTable.IO as H
 
@@ -82,6 +83,8 @@ evalWfg memory (ExprUnaryOp op expr) = do
                   Nothing -> fail ("Operator" ++ (show op) ++ " cannot be applied to " ++ (show value))
 
 evalWfg m ExprRead = do
+    putStr "read: "
+    hFlush stdout
     input <- getLine
     let val = parseInput input
     case val of Right v -> return v
