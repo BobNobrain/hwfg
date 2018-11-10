@@ -100,8 +100,7 @@ wfgParser = do
                     ; condition <- exprParser
                     ; m_reserved "then"
                     ; thenBranch <- cmdParser
-                    ; m_reserved "else"
-                    ; elseBranch <- cmdParser
+                    ; elseBranch <- option CmdNoop (m_reserved "else" >> cmdParser)
                     ; m_reserved "end"
                     ; return (CmdCondition condition thenBranch elseBranch)
                     }
