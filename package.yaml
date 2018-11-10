@@ -1,5 +1,5 @@
-name:                haskell-wfg
-version:             1.0.0.0
+name:                hwfg
+version:             1.0.1.0
 github:              "BobNobrain/haskell-wfg"
 license:             MIT
 author:              "Bob Nobrain"
