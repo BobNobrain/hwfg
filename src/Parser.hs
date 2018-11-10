@@ -65,10 +65,17 @@ term = m_parens exprParser
        <|> fmap (\x -> ExprValue (numberVal x)) m_naturalOrFloat
        <|> (m_reserved "true" >> return (ExprValue $ ValBool True))
        <|> (m_reserved "false" >> return (ExprValue $ ValBool False))
-       <|> (m_reserved "read" >> return ExprRead)
-       <|> fmap (\str -> ExprValue (ValString str)) m_stringLiteral
+       <|> readOperator
+       <|> lstring
+       where
+            lstring = do
+                str <- m_stringLiteral
+                return $ ExprValue $ ValString str
 
-atLeastOneSemi = skipMany1 (m_semi >> m_whiteSpace)
+            readOperator = do
+                m_reserved "read"
+                str <- option "read: " m_stringLiteral
+                return $ ExprRead str
 
 wfgParser :: Parser Command
 wfgParser = do
@@ -82,35 +89,45 @@ wfgParser = do
         cmdParser = do
             cmds <- many singleCmd
             return $ CmdSequence cmds
-        singleCmd = do { v <- m_identifier
-                    ; m_reservedOp "="
-                    ; e <- exprParser
-                    ; atLeastOneSemi
-                    ; return (CmdAssign v e)
-                    }
-                <|> do { m_semi
-                    ; return CmdNoop
-                    }
-                <|> do { m_reserved "output"
-                    ; e <- exprParser
-                    ; atLeastOneSemi
-                    ; return (CmdOutput e)
-                    }
-                <|> do { m_reserved "if"
-                    ; condition <- exprParser
-                    ; m_reserved "then"
-                    ; thenBranch <- cmdParser
-                    ; elseBranch <- option CmdNoop (m_reserved "else" >> cmdParser)
-                    ; m_reserved "end"
-                    ; return (CmdCondition condition thenBranch elseBranch)
-                    }
-                <|> do { m_reserved "while"
-                    ; condition <- exprParser
-                    ; m_reserved "do"
-                    ; body <- cmdParser
-                    ; m_reserved "end"
-                    ; return (CmdWhileLoop condition body)
-                    }
+        singleCmd = assignment
+                <|> noop
+                <|> output
+                <|> ifthenelse
+                <|> whiledo
+
+        assignment = do
+            v <- m_identifier
+            m_reservedOp "="
+            e <- exprParser
+            atLeastOneSemi
+            return (CmdAssign v e)
+
+        noop = m_semi >> return CmdNoop
+
+        output = do
+            m_reserved "output"
+            e <- exprParser
+            atLeastOneSemi
+            return (CmdOutput e)
+
+        ifthenelse = do
+            m_reserved "if"
+            condition <- exprParser
+            m_reserved "then"
+            thenBranch <- cmdParser
+            elseBranch <- option CmdNoop (m_reserved "else" >> cmdParser)
+            m_reserved "end"
+            return (CmdCondition condition thenBranch elseBranch)
+
+        whiledo = do
+            m_reserved "while"
+            condition <- exprParser
+            m_reserved "do"
+            body <- cmdParser
+            m_reserved "end"
+            return (CmdWhileLoop condition body)
+
+        atLeastOneSemi = skipMany1 (m_semi >> m_whiteSpace)
 
 parseWfg :: String -> String -> Either ParseError Command
 parseWfg filename = parse wfgParser filename

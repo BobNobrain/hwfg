@@ -73,6 +73,7 @@ evalWfg memory (ExprIdentifier name) = do
     case mbval of Just val -> return val
                   Nothing -> fail ("Access to undefined variable '" ++ name ++ "'")
 
+-- a . b
 evalWfg memory (ExprBinaryOp op left right) = do
     leftv <- evalWfg memory left
     rightv <- evalWfg memory right
@@ -82,14 +83,16 @@ evalWfg memory (ExprBinaryOp op left right) = do
                          "Operator " ++ (show op) ++ " cannot be applied to " ++ (show leftv) ++ ", " ++ (show rightv)
                        )
 
+-- .a
 evalWfg memory (ExprUnaryOp op expr) = do
     value <- evalWfg memory expr
     let mbval = evalUnaryOperator op value
     case mbval of Just val -> return val
                   Nothing -> fail ("Operator" ++ (show op) ++ " cannot be applied to " ++ (show value))
 
-evalWfg m ExprRead = do
-    putStr "read: "
+-- read [prompt]
+evalWfg m (ExprRead str) = do
+    putStr str
     hFlush stdout
     input <- getLine
     let val = parseInput input
@@ -97,4 +100,4 @@ evalWfg m ExprRead = do
                 Left err -> do
                                 putStrLn $ show err
                                 -- repeat
-                                evalWfg m ExprRead
+                                evalWfg m (ExprRead str)

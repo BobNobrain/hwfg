@@ -66,7 +66,7 @@ data Expression
     | ExprIdentifier Identifier
     | ExprBinaryOp BinaryOperator Expression Expression
     | ExprUnaryOp UnaryOperator Expression
-    | ExprRead
+    | ExprRead String
     deriving (Show, Eq)
 
 data Command

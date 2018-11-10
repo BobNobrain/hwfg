@@ -1,6 +1,6 @@
 # simple fibonacci calculator
 
-n = read;
+n = read "fibonacci #";
 f1 = 0;
 f2 = 1;
 f3 = f1 + f2;
