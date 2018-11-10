@@ -1,0 +1,9 @@
+# lambda
+add = \x y. x + y;
+
+# subprog
+printsum = with x y do
+    output add x y;
+end
+
+printsum 1 2
