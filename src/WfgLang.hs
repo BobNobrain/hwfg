@@ -14,7 +14,13 @@ data Value
     | ValDouble Double
     | ValString String
     | ValBool Bool
+    | ValLambda [Identifier] Expression
+    | ValSubprog [Identifier] Command
     deriving (Eq)
+
+join _ [] = ""
+join _ [single] = single
+join sep (s:ss) = s ++ sep ++ (join sep ss)
 
 instance Show Value where
     show (ValInt i) = show i
@@ -22,6 +28,8 @@ instance Show Value where
     show (ValString str) = show str
     show (ValBool True) = "true"
     show (ValBool False) = "false"
+    show (ValLambda vars body) = "lambda of " ++ (join ", " vars) ++ (show body)
+    show (ValSubprog vars body) = "subprog of " ++ (join "," vars) ++ (show body)
 
 data BinaryOperator
     = BinPlus
@@ -67,6 +75,7 @@ data Expression
     | ExprBinaryOp BinaryOperator Expression Expression
     | ExprUnaryOp UnaryOperator Expression
     | ExprRead String
+    | ExprCall [Expression]
     deriving (Show, Eq)
 
 data Command

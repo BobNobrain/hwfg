@@ -60,7 +60,8 @@ table = [ [Prefix (m_reservedOp "-"   >> return (ExprUnaryOp UnMinus     ))]
         , [Infix (m_reservedOp "or"  >> return (ExprBinaryOp BinOr       )) AssocLeft]
         , [Infix (m_reservedOp "xor" >> return (ExprBinaryOp BinXor      )) AssocLeft]
         ]
-term = m_parens exprParser
+term = m_parens exprOrCall
+       <|> lambda
        <|> fmap ExprIdentifier m_identifier
        <|> fmap (\x -> ExprValue (numberVal x)) m_naturalOrFloat
        <|> (m_reserved "true" >> return (ExprValue $ ValBool True))
@@ -76,6 +77,17 @@ term = m_parens exprParser
                 m_reserved "read"
                 str <- option "read: " m_stringLiteral
                 return $ ExprRead str
+
+            lambda = do
+                m_reservedOp "\\"
+                args <- many1 m_identifier
+                m_reservedOp "."
+                body <- exprOrCall
+                m_semi
+                return $ ExprValue $ ValLambda args body
+
+
+exprOrCall = exprParser
 
 wfgParser :: Parser Command
 wfgParser = do
@@ -98,7 +110,7 @@ wfgParser = do
         assignment = do
             v <- m_identifier
             m_reservedOp "="
-            e <- exprParser
+            e <- exprOrCall
             atLeastOneSemi
             return (CmdAssign v e)
 
@@ -106,13 +118,13 @@ wfgParser = do
 
         output = do
             m_reserved "output"
-            e <- exprParser
+            e <- exprOrCall
             atLeastOneSemi
             return (CmdOutput e)
 
         ifthenelse = do
             m_reserved "if"
-            condition <- exprParser
+            condition <- exprOrCall
             m_reserved "then"
             thenBranch <- cmdParser
             elseBranch <- option CmdNoop (m_reserved "else" >> cmdParser)
@@ -121,7 +133,7 @@ wfgParser = do
 
         whiledo = do
             m_reserved "while"
-            condition <- exprParser
+            condition <- exprOrCall
             m_reserved "do"
             body <- cmdParser
             m_reserved "end"
@@ -149,7 +161,7 @@ parseInput = parse literal "(input)"
 exprFullParser :: Parser Expression
 exprFullParser = do
     m_whiteSpace
-    e <- exprParser
+    e <- exprOrCall
     eof
     return e
 
