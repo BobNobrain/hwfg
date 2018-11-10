@@ -66,6 +66,7 @@ term = m_parens exprParser
        <|> (m_reserved "true" >> return (ExprValue $ ValBool True))
        <|> (m_reserved "false" >> return (ExprValue $ ValBool False))
        <|> (m_reserved "read" >> return ExprRead)
+       <|> fmap (\str -> ExprValue (ValString str)) m_stringLiteral
 
 atLeastOneSemi = skipMany1 (m_semi >> m_whiteSpace)
 
