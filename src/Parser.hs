@@ -17,10 +17,11 @@ def = emptyDef{ commentStart = "#~"
               , commentLine = "#"
               , identStart = letter <|> char '_' <|> char '$'
               , identLetter = alphaNum
-              , opStart = oneOf "+-*/%=!naox\\."
+              , opStart = oneOf "+-*/%=!naox\\.<>"
               , opLetter = oneOf "=otndr"
               , reservedOpNames = ["+", "-", "*", "/", "%", "=", "==", "!="
-                                  , "not", "and", "or", "xor", "\\", "."]
+                                  , "not", "and", "or", "xor", "\\", "."
+                                  , ">", "<", ">=", "<="]
               , reservedNames = ["true", "false", "end",
                                  "if", "then", "else",
                                  "while", "do", "output", "read"]
@@ -51,6 +52,10 @@ table = [ [Prefix (m_reservedOp "-"   >> return (ExprUnaryOp UnMinus     ))]
         , [Infix (m_reservedOp "-"   >> return (ExprBinaryOp BinMinus    )) AssocLeft]
         , [Infix (m_reservedOp "=="  >> return (ExprBinaryOp BinEq       )) AssocLeft]
         , [Infix (m_reservedOp "!="  >> return (ExprBinaryOp BinNEq      )) AssocLeft]
+        , [Infix (m_reservedOp ">"   >> return (ExprBinaryOp BinGT       )) AssocLeft]
+        , [Infix (m_reservedOp ">="  >> return (ExprBinaryOp BinGE       )) AssocLeft]
+        , [Infix (m_reservedOp "<"   >> return (ExprBinaryOp BinLT       )) AssocLeft]
+        , [Infix (m_reservedOp "<="  >> return (ExprBinaryOp BinLE       )) AssocLeft]
         , [Infix (m_reservedOp "and" >> return (ExprBinaryOp BinAnd      )) AssocLeft]
         , [Infix (m_reservedOp "or"  >> return (ExprBinaryOp BinOr       )) AssocLeft]
         , [Infix (m_reservedOp "xor" >> return (ExprBinaryOp BinXor      )) AssocLeft]

@@ -29,8 +29,14 @@ data BinaryOperator
     | BinMult
     | BinDiv
     | BinRemainder
+
     | BinEq
     | BinNEq
+    | BinGT
+    | BinLT
+    | BinGE
+    | BinLE
+
     | BinAnd
     | BinOr
     | BinXor
