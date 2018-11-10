@@ -38,7 +38,8 @@ runWfgWithState _ (CmdSequence []) = return ()
 -- output E
 runWfgWithState memory (CmdOutput expr) = do
     value <- evalWfg memory expr
-    putStrLn $ show value
+    case value of (ValString str) -> putStrLn str
+                  val -> print val
 
 -- I = E
 runWfgWithState memory (CmdAssign name expr) = do
