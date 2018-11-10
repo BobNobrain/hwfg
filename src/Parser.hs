@@ -124,12 +124,15 @@ parseInput :: String -> Either ParseError Value
 parseInput = parse literal "(input)"
 
 
-exprOrCommand :: Parser (Either Command Expression)
-exprOrCommand = fmap Left wfgParser <|> fmap Right (do
+exprFullParser :: Parser Expression
+exprFullParser = do
     m_whiteSpace
     e <- exprParser
     eof
-    return e)
+    return e
 
 parseExprOrCommand :: String -> String -> Either ParseError (Either Command Expression)
-parseExprOrCommand filename = parse exprOrCommand filename
+parseExprOrCommand filename program = result where
+    result = case parse wfgParser filename program
+                 of Left _ -> fmap Right $ parse exprFullParser filename program
+                    Right cmd -> Right $ Left cmd
