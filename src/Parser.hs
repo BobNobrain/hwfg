@@ -85,7 +85,7 @@ term = m_parens exprOrCall
                 m_reservedOp "."
                 body <- exprOrCall
                 optional $ char '\n'
-                return $ ExprValue $ ValLambda args body
+                return $ ExprValue $ ValLambda args [] body
 
             subprog = do
                 args <- option [] (m_reserved "with" >> many1 m_identifier)

@@ -112,13 +112,22 @@ evalWfg m (ExprRead str) = do
 
 evalWfg memory (ExprCall exprs) = do
     values <- mapM (evalWfg memory) exprs
-    case (head values) of (ValLambda args body) -> evalLambda memory args (tail values) body
-                          e -> fail ((show e) ++ " is not callable")
+    case (head values)
+        of (ValLambda args boundValues body) -> evalLambda memory args (boundValues ++ (tail values)) body
+           e -> fail ((show e) ++ " is not callable")
     where
         evalLambda :: Memory.Memory -> [Identifier] -> [Value] -> Expression -> IO Value
-        evalLambda memory args values body = do
-            scope <- createScope memory args values
-            evalWfg scope body
+        evalLambda memory args values body =
+            if (length args) <= (length values) then do
+                scope <- createScope memory args values
+                result <- evalWfg scope body
+                let restValues = drop (length args) values
+                if (length restValues) > 0 then
+                    evalWfg memory $ ExprCall $ map ExprValue (result:restValues)
+                else
+                    return result
+            else
+                return $ ValLambda args values body
 
 
 createScope :: Memory.Memory -> [Identifier] -> [Value] -> IO Memory.Memory

@@ -14,7 +14,7 @@ data Value
     | ValDouble Double
     | ValString String
     | ValBool Bool
-    | ValLambda [Identifier] Expression
+    | ValLambda [Identifier] [Value] Expression
     | ValSubprog [Identifier] Command
     deriving (Eq)
 
@@ -28,8 +28,8 @@ instance Show Value where
     show (ValString str) = show str
     show (ValBool True) = "true"
     show (ValBool False) = "false"
-    show (ValLambda vars body) = "\\" ++ (join ", " vars) ++ ". " ++ (show body)
-    show (ValSubprog vars body) = "with " ++ (join "," vars) ++ " do " ++ (show body)
+    show (ValLambda vars boundValues _) = "lambda " ++ (join ", " (drop (length boundValues) vars))
+    show (ValSubprog vars _) = "subprog " ++ (join "," vars)
 
 data BinaryOperator
     = BinPlus
