@@ -4,8 +4,11 @@ module WfgLang
     , BinaryOperator (..)
     , UnaryOperator (..)
     , Expression (..)
+    , NativeCall
     , Command (..)
     ) where
+
+import qualified Memory
 
 type Identifier = String
 
@@ -69,6 +72,8 @@ data UnaryOperator
 -- unaryOperatorFromString "not" = UnNot
 -- unaryOperatorFromString "-" = UnMinus
 
+type NativeCall = (Memory.Memory -> IO Value)
+
 data Expression
     = ExprValue Value
     | ExprIdentifier Identifier
@@ -76,6 +81,7 @@ data Expression
     | ExprUnaryOp UnaryOperator Expression
     | ExprRead String
     | ExprCall [Expression]
+    | ExprNativeCall NativeCall
     deriving (Show, Eq)
 
 data Command

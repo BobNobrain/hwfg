@@ -129,6 +129,8 @@ evalWfg memory (ExprCall exprs) = do
             else
                 return $ ValLambda args values body
 
+evalWfg memory (ExprNativeCall body) = body memory
+
 
 createScope :: Memory.Memory -> [Identifier] -> [Value] -> IO Memory.Memory
 createScope memory names values = do

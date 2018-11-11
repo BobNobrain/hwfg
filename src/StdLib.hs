@@ -1,6 +1,7 @@
 module StdLib
     ( evalBinaryOperator
     , evalUnaryOperator
+    , stdlib
     ) where
 
 import WfgLang
@@ -75,3 +76,16 @@ evalUnaryOperator UnMinus (ValInt i) = Just $ ValInt (-i)
 evalUnaryOperator UnMinus (ValDouble d) = Just $ ValDouble (-d)
 
 evalUnaryOperator _ _ = Nothing
+
+stdlib :: [(Identifier, Value)]
+stdlib = [ ("int", wrap stdInt)
+         ,
+         ]
+
+wrap :: ([Value] -> Maybe Value) -> Value
+-- TODO
+
+stdInt :: [Value] -> Maybe Value
+stdInt [i@(ValInt _)] = Just i
+stdInt [(ValDouble d)] = Just $ ValInt (floor d)
+stdInt _ = Nothing
