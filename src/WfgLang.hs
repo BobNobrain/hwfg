@@ -83,6 +83,7 @@ data Command
     | CmdAssign Identifier Expression
     | CmdCondition Expression Command Command
     | CmdWhileLoop Expression Command
+    | CmdSubprogCall [Expression]
     | CmdSequence [Command]
     | CmdNoop
     deriving (Show, Eq)

@@ -1,15 +1,15 @@
 # lambda
 add = \x y. x + y;
 
-z = (\x y. x + y) 1 2
+z = (\x y. x + y) 1 2;
 
 # subprog
 printsum = with x y do
     output add x y;
-end
+end;
 
 main = do
-    printsum 1 2;
-end
+    do printsum 1 2;
+end;
 
-main;
+do main;

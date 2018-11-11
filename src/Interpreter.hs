@@ -3,29 +3,26 @@ module Interpreter
     , runWfg
     , runWfgWithState
     , evalWfg
-    , initializeMemory
     ) where
 
 import WfgLang
 import StdLib
 import Parser (parseInput)
 import System.IO
-import Data.Hashable
-import qualified Data.HashTable.IO as H
+-- import Data.Hashable
+-- import qualified Data.HashTable.IO as H
+import qualified Memory
 
-type Memory = H.BasicHashTable Identifier Value
 type WfgError = String
 
 
-initializeMemory = H.new
-
 runWfg :: Command -> IO ()
 runWfg cmd = do
-    memory <- initializeMemory
+    memory <- Memory.create
     runWfgWithState memory cmd
 
 
-runWfgWithState :: Memory -> Command -> IO ()
+runWfgWithState :: Memory.Memory -> Command -> IO ()
 runWfgWithState _ CmdNoop = return ()
 
 -- C1; C2
@@ -44,7 +41,7 @@ runWfgWithState memory (CmdOutput expr) = do
 -- I = E
 runWfgWithState memory (CmdAssign name expr) = do
     value <- evalWfg memory expr
-    H.insert memory name value
+    Memory.set memory name value
     return ()
 
 -- if E then C else C end
@@ -63,13 +60,24 @@ runWfgWithState memory cmd@(CmdWhileLoop condition loop) = do
                  ValBool False -> return ()
                  _ -> fail "Not a boolean value in while condition"
 
-evalWfg :: Memory -> Expression -> IO Value
+-- do I [args]
+runWfgWithState memory (CmdSubprogCall exprs) = do
+    values <- mapM (evalWfg memory) exprs
+    case (head values) of (ValSubprog args body) -> runSubprog memory args (tail values) body
+                          anything -> fail ((show anything) ++ " is not a subprog")
+    where
+        runSubprog memory args values body = do
+            scope <- createScope memory args values
+            runWfgWithState scope body
+
+
+evalWfg :: Memory.Memory -> Expression -> IO Value
 -- value
 evalWfg _ (ExprValue val) = return val
 
 -- I
 evalWfg memory (ExprIdentifier name) = do
-    mbval <- H.lookup memory name
+    mbval <- Memory.get memory name
     case mbval of Just val -> return val
                   Nothing -> fail ("Access to undefined variable '" ++ name ++ "'")
 
@@ -107,11 +115,14 @@ evalWfg memory (ExprCall exprs) = do
     case (head values) of (ValLambda args body) -> evalLambda memory args (tail values) body
                           e -> fail ((show e) ++ " is not callable")
     where
-        evalLambda :: Memory -> [Identifier] -> [Value] -> Expression -> IO Value
+        evalLambda :: Memory.Memory -> [Identifier] -> [Value] -> Expression -> IO Value
         evalLambda memory args values body = do
-            scope <- initializeMemory
-            fillMemory scope (zip args values)
+            scope <- createScope memory args values
             evalWfg scope body
 
-fillMemory :: Memory -> [(Identifier, Value)] -> IO ()
-fillMemory memory content = mapM_ (\(key, value) -> H.insert memory key value) content
+
+createScope :: Memory.Memory -> [Identifier] -> [Value] -> IO Memory.Memory
+createScope memory names values = do
+    scope <- Memory.push memory
+    Memory.fill scope (zip names values)
+    return scope

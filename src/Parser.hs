@@ -62,6 +62,7 @@ table = [ [Prefix (m_reservedOp "-"   >> return (ExprUnaryOp UnMinus     ))]
         ]
 term = m_parens exprOrCall
        <|> lambda
+       <|> subprog
        <|> fmap ExprIdentifier m_identifier
        <|> fmap (\x -> ExprValue (numberVal x)) m_naturalOrFloat
        <|> (m_reserved "true" >> return (ExprValue $ ValBool True))
@@ -86,6 +87,13 @@ term = m_parens exprOrCall
                 optional $ char '\n'
                 return $ ExprValue $ ValLambda args body
 
+            subprog = do
+                args <- option [] (m_reserved "with" >> many1 m_identifier)
+                m_reserved "do"
+                body <- commands
+                m_reserved "end"
+                return $ ExprValue $ ValSubprog args body
+
 
 exprOrCall :: Parser Expression
 exprOrCall = do
@@ -93,12 +101,11 @@ exprOrCall = do
     case exprs of [single] -> return single
                   many -> return $ ExprCall many
 
-wfgParser :: Parser Command
-wfgParser = do
+commands :: Parser Command
+commands = do
     m_whiteSpace
     result <- cmdParser
     optional m_semi
-    eof
     return result
     where
         cmdParser :: Parser Command
@@ -110,6 +117,7 @@ wfgParser = do
                 <|> output
                 <|> ifthenelse
                 <|> whiledo
+                <|> subprogCall
 
         assignment = do
             v <- m_identifier
@@ -143,7 +151,18 @@ wfgParser = do
             m_reserved "end"
             return (CmdWhileLoop condition body)
 
+        subprogCall = do
+            m_reserved "do"
+            exprs <- many1 exprParser
+            return (CmdSubprogCall exprs)
+
         atLeastOneSemi = skipMany1 (m_semi >> m_whiteSpace)
+
+wfgParser :: Parser Command
+wfgParser = do
+    result <- commands
+    eof
+    return result
 
 parseWfg :: String -> String -> Either ParseError Command
 parseWfg filename = parse wfgParser filename
