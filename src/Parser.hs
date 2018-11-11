@@ -83,7 +83,7 @@ term = m_parens exprOrCall
                 args <- many1 m_identifier
                 m_reservedOp "."
                 body <- exprOrCall
-                m_semi
+                optional $ char '\n'
                 return $ ExprValue $ ValLambda args body
 
 
