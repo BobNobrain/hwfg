@@ -87,7 +87,11 @@ term = m_parens exprOrCall
                 return $ ExprValue $ ValLambda args body
 
 
-exprOrCall = exprParser
+exprOrCall :: Parser Expression
+exprOrCall = do
+    exprs <- many1 exprParser
+    case exprs of [single] -> return single
+                  many -> return $ ExprCall many
 
 wfgParser :: Parser Command
 wfgParser = do

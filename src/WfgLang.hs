@@ -28,8 +28,8 @@ instance Show Value where
     show (ValString str) = show str
     show (ValBool True) = "true"
     show (ValBool False) = "false"
-    show (ValLambda vars body) = "lambda of " ++ (join ", " vars) ++ (show body)
-    show (ValSubprog vars body) = "subprog of " ++ (join "," vars) ++ (show body)
+    show (ValLambda vars body) = "\\" ++ (join ", " vars) ++ ". " ++ (show body)
+    show (ValSubprog vars body) = "with " ++ (join "," vars) ++ " do " ++ (show body)
 
 data BinaryOperator
     = BinPlus

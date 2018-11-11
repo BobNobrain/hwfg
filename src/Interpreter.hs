@@ -101,3 +101,17 @@ evalWfg m (ExprRead str) = do
                                 putStrLn $ show err
                                 -- repeat
                                 evalWfg m (ExprRead str)
+
+evalWfg memory (ExprCall exprs) = do
+    values <- mapM (evalWfg memory) exprs
+    case (head values) of (ValLambda args body) -> evalLambda memory args (tail values) body
+                          e -> fail ((show e) ++ " is not callable")
+    where
+        evalLambda :: Memory -> [Identifier] -> [Value] -> Expression -> IO Value
+        evalLambda memory args values body = do
+            scope <- initializeMemory
+            fillMemory scope (zip args values)
+            evalWfg scope body
+
+fillMemory :: Memory -> [(Identifier, Value)] -> IO ()
+fillMemory memory content = mapM_ (\(key, value) -> H.insert memory key value) content
