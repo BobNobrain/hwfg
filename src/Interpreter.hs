@@ -6,13 +6,12 @@ module Interpreter
     , createMemoryAndFill
     ) where
 
-import WfgLang
-import StdLib
-import Parser (parseInput)
 import System.IO
--- import Data.Hashable
--- import qualified Data.HashTable.IO as H
+import WfgLang
+import Parser (parseInput)
 import qualified Memory
+import qualified StdLib.All as StdLib
+import StdLib.Operators (evalBinaryOperator, evalUnaryOperator)
 
 type WfgError = String
 
@@ -20,7 +19,7 @@ type WfgError = String
 createMemoryAndFill :: IO Memory.Memory
 createMemoryAndFill = do
     memory <- Memory.create
-    Memory.fill memory stdlib
+    Memory.fill memory StdLib.content
     return memory
 
 runWfg :: Command -> IO ()

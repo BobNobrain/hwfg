@@ -1,7 +1,6 @@
-module StdLib
+module StdLib.Operators
     ( evalBinaryOperator
     , evalUnaryOperator
-    , stdlib
     ) where
 
 import WfgLang
@@ -76,28 +75,3 @@ evalUnaryOperator UnMinus (ValInt i) = Just $ ValInt (-i)
 evalUnaryOperator UnMinus (ValDouble d) = Just $ ValDouble (-d)
 
 evalUnaryOperator _ _ = Nothing
-
-stdlib :: [(Identifier, Value)]
-stdlib = [ ("int", ValCallable [] $ NativeIOLambda 1 stdInt)
-         , ("sin", ValCallable [] $ NativeIOLambda 1 stdSin)
-         , ("pow", ValCallable [] $ NativeIOLambda 2 stdPow)
-         , ("pi" , ValDouble pi)
-         ]
-
-stdInt :: [Value] -> IO Value
-stdInt [i@(ValInt _)] = return i
-stdInt [(ValDouble d)] = return $ ValInt (floor d)
-stdInt [other] = fail ("Cannot convert " ++ (show other) ++ " to int")
-stdInt _ = fail "Incorrect int call"
-
-stdSin :: [Value] -> IO Value
-stdSin [(ValInt i)] = stdSin [(ValDouble (fromIntegral i))]
-stdSin [(ValDouble d)] = return $ ValDouble (sin d)
-stdSin _ = fail "Invalid arguments for sin function"
-
-stdPow :: [Value] -> IO Value
-stdPow [(ValDouble d1), (ValDouble d2)] = return $ ValDouble (d1 ** d2)
-stdPow [(ValInt i1), (ValInt i2)] = return $ ValInt (i1 ^ i2)
-stdPow [(ValDouble d), (ValInt i)] = return $ ValDouble (d ^ i)
-stdPow [(ValInt i), d@(ValDouble _)] = stdPow [(ValDouble (fromIntegral i)), d]
-stdPow _ = fail "Invalid arguments for pow function"
