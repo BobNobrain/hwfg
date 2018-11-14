@@ -69,7 +69,8 @@ runWfgWithState memory cmd@(CmdWhileLoop condition loop) = do
                  ValBool False -> return CmdResultEmpty
                  _ -> fail "Not a boolean value in while condition"
 
--- do (subprog) [args]
+
+-- do (subprog) args
 runWfgWithState memory (CmdSubprogCall exprs) = apply memory exprs >> return CmdResultEmpty
 
 -- return E
@@ -117,10 +118,8 @@ evalWfg m (ExprRead str) = do
                                 -- repeat
                                 evalWfg m (ExprRead str)
 
-evalWfg memory (ExprCall exprs) = do
-    result <- apply memory exprs
-    case result of Nothing -> fail "Unexpected subprog call"
-                   Just val -> return val
+evalWfg memory (ExprCall exprs) = apply memory exprs
+
 
 createScope :: Memory.Memory -> [Identifier] -> [Value] -> IO Memory.Memory
 createScope memory names values = do
@@ -128,23 +127,26 @@ createScope memory names values = do
     Memory.fill scope (zip names values)
     return scope
 
-apply :: Memory.Memory -> [Expression] -> IO (Maybe Value)
+apply :: Memory.Memory -> [Expression] -> IO Value
 apply memory exprs = do
     (callable:arguments) <- mapM (evalWfg memory) exprs
-    apply' (Just callable) arguments
+    apply' callable arguments
     where
-        apply' anyValue [] = return anyValue
-        apply' (Just (ValCallable boundValues callable)) values = applyCallable callable boundValues values
-        apply' (Just uncallableValue) _ = fail (show uncallableValue ++ " is not callable")
-        apply' Nothing _ = fail "Cannot call nothing"
+        -- apply' anyValue [] = return anyValue
+        apply' (ValCallable boundValues callable) values = applyCallable callable boundValues values
+        apply' uncallableValue [] = return uncallableValue
+        apply' uncallableValue _ = fail (show uncallableValue ++ " is not callable")
 
-        applyCallable callable boundValues [] = return $ Just $ ValCallable boundValues callable
         applyCallable callable boundValues (v:vs) = do
             if (expectedArgsCount callable) == (length (boundValues)) + 1 then do
                 result <- evaluate callable (boundValues ++ [v])
                 apply' result vs
             else
                 applyCallable callable (boundValues ++ [v]) vs
+
+        -- applying a subprog to empty arguments list should be done
+        applyCallable s@(Subprog _ _) boundValues [] = evaluate s boundValues
+        applyCallable anotherCallable boundValues [] = return $ ValCallable boundValues anotherCallable
 
         expectedArgsCount (Lambda args _) = length args
         expectedArgsCount (Subprog args _) = length args
@@ -155,15 +157,16 @@ apply memory exprs = do
         evaluate (Lambda args body) values = do
             scope <- createScope memory args values
             result <- evalWfg scope body
-            return $ Just result
+            return result
 
         evaluate (Subprog args body) values = do
             scope <- createScope memory args values
-            runWfgWithState scope body
-            return Nothing
+            result <- runWfgWithState scope body
+            case result of CmdResultValue val -> return val
+                           _ -> return ValNothing
 
-        evaluate (NativeLambda _ nativeCode) values = return $ Just $ nativeCode values
-        evaluate (NativeSubprog _ nativeCode) values = nativeCode values >> return Nothing
+        evaluate (NativeLambda _ nativeCode) values = return $ nativeCode values
+        evaluate (NativeSubprog _ nativeCode) values = nativeCode values >> return ValNothing
         evaluate (NativeIOLambda _ nativeCode) values = do
             result <- nativeCode values
-            return $ Just result
+            return result

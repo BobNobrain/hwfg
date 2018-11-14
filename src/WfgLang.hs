@@ -40,6 +40,7 @@ data Value
     | ValDouble Double
     | ValString String
     | ValBool Bool
+    | ValNothing
     | ValCallable [Value] Callable
     -- deriving (Eq)
 
@@ -49,6 +50,7 @@ instance Show Value where
     show (ValString str) = show str
     show (ValBool True) = "true"
     show (ValBool False) = "false"
+    show ValNothing = "(nothing)"
     show (ValCallable boundValues callable) = showCallable (length boundValues) callable
 
 instance Eq Value where
@@ -56,6 +58,7 @@ instance Eq Value where
     (==) (ValDouble d1) (ValDouble d2) = d1 == d2
     (==) (ValString s1) (ValString s2) = s1 == s2
     (==) (ValBool b1) (ValBool b2) = b1 == b2
+    (==) ValNothing ValNothing = True
     (==) _ _ = False
 
 data BinaryOperator

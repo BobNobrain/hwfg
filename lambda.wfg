@@ -11,7 +11,10 @@ printsum = with x y start
 end;
 
 main = start
-    do printsum 1 2;
+    result = printsum 1 2;
+    if result != 3 then
+        output "Something went wrong";
+    end
 end;
 
 do main;
