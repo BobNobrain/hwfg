@@ -22,7 +22,7 @@ def = emptyDef{ commentStart = "#~"
               , reservedOpNames = ["+", "-", "*", "/", "%", "=", "==", "!="
                                   , "not", "and", "or", "xor", "\\", "."
                                   , ">", "<", ">=", "<="]
-              , reservedNames = ["true", "false", "end",
+              , reservedNames = ["true", "false", "end", "return",
                                  "if", "then", "else",
                                  "while", "do", "output", "read"]
               }
@@ -85,14 +85,14 @@ term = m_parens exprOrCall
                 m_reservedOp "."
                 body <- exprOrCall
                 optional $ char '\n'
-                return $ ExprValue $ ValLambda args [] body
+                return $ ExprValue $ ValCallable [] $ Lambda args body
 
             subprog = do
                 args <- option [] (m_reserved "with" >> many1 m_identifier)
                 m_reserved "do"
                 body <- commands
                 m_reserved "end"
-                return $ ExprValue $ ValSubprog args body
+                return $ ExprValue $ ValCallable [] $ Subprog args body
 
 
 exprOrCall :: Parser Expression
@@ -118,6 +118,7 @@ commands = do
                 <|> ifthenelse
                 <|> whiledo
                 <|> subprogCall
+                <|> returnCmd
 
         assignment = do
             v <- m_identifier
@@ -154,7 +155,14 @@ commands = do
         subprogCall = do
             m_reserved "do"
             exprs <- many1 exprParser
+            atLeastOneSemi
             return (CmdSubprogCall exprs)
+
+        returnCmd = do
+            m_reserved "return"
+            expr <- exprOrCall
+            atLeastOneSemi
+            return (CmdReturn expr)
 
         atLeastOneSemi = skipMany1 (m_semi >> m_whiteSpace)
 

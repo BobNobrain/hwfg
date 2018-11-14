@@ -10,7 +10,7 @@ import Control.Monad (forever, when)
 import Cli
 import Parser
 import Interpreter
-import qualified Memory
+-- import qualified Memory
 
 
 run :: IO ()
@@ -37,7 +37,7 @@ runWithMode (ModeRunFile filename) = do
             runWfg ast
 
 runWithMode ModeRunInteractive = do
-    memory <- Memory.create
+    memory <- createMemoryAndFill
     forever $ readCommand "" >>= eval memory
     where
         readCommand str = do
@@ -53,4 +53,4 @@ runWithMode ModeRunInteractive = do
             val <- evalWfg memory expr
             putStrLn $ show val
 
-        eval memory (Left cmd) = runWfgWithState memory cmd
+        eval memory (Left cmd) = runWfgWithState memory cmd >> return ()

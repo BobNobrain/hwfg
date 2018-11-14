@@ -3,6 +3,7 @@ module Interpreter
     , runWfg
     , runWfgWithState
     , evalWfg
+    , createMemoryAndFill
     ) where
 
 import WfgLang
@@ -16,33 +17,42 @@ import qualified Memory
 type WfgError = String
 
 
+createMemoryAndFill :: IO Memory.Memory
+createMemoryAndFill = do
+    memory <- Memory.create
+    Memory.fill memory stdlib
+    return memory
+
 runWfg :: Command -> IO ()
 runWfg cmd = do
-    memory <- Memory.create
+    memory <- createMemoryAndFill
     runWfgWithState memory cmd
+    return ()
 
 
-runWfgWithState :: Memory.Memory -> Command -> IO ()
-runWfgWithState _ CmdNoop = return ()
+runWfgWithState :: Memory.Memory -> Command -> IO CommandResult
+runWfgWithState _ CmdNoop = return CmdResultEmpty
 
 -- C1; C2
 runWfgWithState memory (CmdSequence (c:cs)) = do
-    runWfgWithState memory c
-    runWfgWithState memory (CmdSequence cs)
+    r <- runWfgWithState memory c
+    case r of CmdResultEmpty -> runWfgWithState memory (CmdSequence cs)
+              other -> return other
 
-runWfgWithState _ (CmdSequence []) = return ()
+runWfgWithState _ (CmdSequence []) = return CmdResultEmpty
 
 -- output E
 runWfgWithState memory (CmdOutput expr) = do
     value <- evalWfg memory expr
     case value of (ValString str) -> putStrLn str
                   val -> print val
+    return CmdResultEmpty
 
 -- I = E
 runWfgWithState memory (CmdAssign name expr) = do
     value <- evalWfg memory expr
     Memory.set memory name value
-    return ()
+    return CmdResultEmpty
 
 -- if E then C else C end
 runWfgWithState memory (CmdCondition condition thenBranch elseBranch) = do
@@ -57,18 +67,16 @@ runWfgWithState memory cmd@(CmdWhileLoop condition loop) = do
     case cond of ValBool True -> do
                                     runWfgWithState memory loop
                                     runWfgWithState memory cmd
-                 ValBool False -> return ()
+                 ValBool False -> return CmdResultEmpty
                  _ -> fail "Not a boolean value in while condition"
 
--- do I [args]
-runWfgWithState memory (CmdSubprogCall exprs) = do
-    values <- mapM (evalWfg memory) exprs
-    case (head values) of (ValSubprog args body) -> runSubprog memory args (tail values) body
-                          anything -> fail ((show anything) ++ " is not a subprog")
-    where
-        runSubprog memory args values body = do
-            scope <- createScope memory args values
-            runWfgWithState scope body
+-- do (subprog) [args]
+runWfgWithState memory (CmdSubprogCall exprs) = apply memory exprs >> return CmdResultEmpty
+
+-- return E
+runWfgWithState memory (CmdReturn expr) = do
+    ret <- evalWfg memory expr
+    return $ CmdResultValue ret
 
 
 evalWfg :: Memory.Memory -> Expression -> IO Value
@@ -111,29 +119,52 @@ evalWfg m (ExprRead str) = do
                                 evalWfg m (ExprRead str)
 
 evalWfg memory (ExprCall exprs) = do
-    values <- mapM (evalWfg memory) exprs
-    case (head values)
-        of (ValLambda args boundValues body) -> evalLambda memory args (boundValues ++ (tail values)) body
-           e -> fail ((show e) ++ " is not callable")
-    where
-        evalLambda :: Memory.Memory -> [Identifier] -> [Value] -> Expression -> IO Value
-        evalLambda memory args values body =
-            if (length args) <= (length values) then do
-                scope <- createScope memory args values
-                result <- evalWfg scope body
-                let restValues = drop (length args) values
-                if (length restValues) > 0 then
-                    evalWfg memory $ ExprCall $ map ExprValue (result:restValues)
-                else
-                    return result
-            else
-                return $ ValLambda args values body
-
-evalWfg memory (ExprNativeCall body) = body memory
-
+    result <- apply memory exprs
+    case result of Nothing -> fail "Unexpected subprog call"
+                   Just val -> return val
 
 createScope :: Memory.Memory -> [Identifier] -> [Value] -> IO Memory.Memory
 createScope memory names values = do
     scope <- Memory.push memory
     Memory.fill scope (zip names values)
     return scope
+
+apply :: Memory.Memory -> [Expression] -> IO (Maybe Value)
+apply memory exprs = do
+    (callable:arguments) <- mapM (evalWfg memory) exprs
+    apply' (Just callable) arguments
+    where
+        apply' anyValue [] = return anyValue
+        apply' (Just (ValCallable boundValues callable)) values = applyCallable callable boundValues values
+        apply' (Just uncallableValue) _ = fail (show uncallableValue ++ " is not callable")
+        apply' Nothing _ = fail "Cannot call nothing"
+
+        applyCallable callable boundValues [] = return $ Just $ ValCallable boundValues callable
+        applyCallable callable boundValues (v:vs) = do
+            if (expectedArgsCount callable) == (length (boundValues)) + 1 then do
+                result <- evaluate callable (boundValues ++ [v])
+                apply' result vs
+            else
+                applyCallable callable (boundValues ++ [v]) vs
+
+        expectedArgsCount (Lambda args _) = length args
+        expectedArgsCount (Subprog args _) = length args
+        expectedArgsCount (NativeLambda c _) = c
+        expectedArgsCount (NativeSubprog c _) = c
+        expectedArgsCount (NativeIOLambda c _) = c
+
+        evaluate (Lambda args body) values = do
+            scope <- createScope memory args values
+            result <- evalWfg scope body
+            return $ Just result
+
+        evaluate (Subprog args body) values = do
+            scope <- createScope memory args values
+            runWfgWithState scope body
+            return Nothing
+
+        evaluate (NativeLambda _ nativeCode) values = return $ Just $ nativeCode values
+        evaluate (NativeSubprog _ nativeCode) values = nativeCode values >> return Nothing
+        evaluate (NativeIOLambda _ nativeCode) values = do
+            result <- nativeCode values
+            return $ Just result
