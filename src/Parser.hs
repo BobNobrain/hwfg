@@ -180,6 +180,7 @@ literal = fmap numberVal m_naturalOrFloat
           <|> (m_reservedOp "-" >> (fmap numberValNeg m_naturalOrFloat))
           <|> (m_reserved "true" >> return (ValBool True))
           <|> (m_reserved "false" >> return (ValBool False))
+          <|> (m_stringLiteral >>= (\s -> return (ValString s)))
                 where
                     numberValNeg :: Either Integer Double -> Value
                     numberValNeg (Left i) = numberVal (Left (-i))
