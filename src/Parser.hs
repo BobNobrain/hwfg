@@ -22,8 +22,8 @@ def = emptyDef{ commentStart = "#~"
               , reservedOpNames = ["+", "-", "*", "/", "%", "=", "==", "!="
                                   , "not", "and", "or", "xor", "\\", "."
                                   , ">", "<", ">=", "<="]
-              , reservedNames = ["true", "false", "end", "return",
-                                 "if", "then", "else",
+              , reservedNames = ["true", "false", "end", "start",
+                                 "if", "then", "else", "return",
                                  "while", "do", "output", "read"]
               }
 
@@ -89,7 +89,7 @@ term = m_parens exprOrCall
 
             subprog = do
                 args <- option [] (m_reserved "with" >> many1 m_identifier)
-                m_reserved "do"
+                m_reserved "start"
                 body <- commands
                 m_reserved "end"
                 return $ ExprValue $ ValCallable [] $ Subprog args body
