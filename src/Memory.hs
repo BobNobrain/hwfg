@@ -6,9 +6,11 @@ module Memory
     , set
     , push
     , pop
+    , dump
     ) where
 
 import qualified Data.HashTable.IO as H
+import Helpers
 import WfgLang
 
 type Layer = H.BasicHashTable Identifier Value
@@ -46,3 +48,23 @@ push memory = do
 pop :: Memory -> IO Memory
 pop (l:ls) = return ls
 pop [] = fail "Cannot pop root scope"
+
+
+dump :: Bool -> Memory -> IO String
+dump _ [] = return "(empty memory)"
+dump showRoot (root:[]) = do
+    layer <- dumpl root
+    return ("(root scope: " ++ (if showRoot then layer else "...") ++ ")")
+
+dump showRoot (l:ls) = do
+    hd <- dumpl l
+    tl <- dump showRoot ls
+    return ("(scope: " ++ hd ++ "), " ++ tl)
+
+dumpl :: Layer -> IO String
+dumpl layer = do
+    entries <- H.foldM folder [] layer
+    return $ join ", " (map dumpvar entries)
+    where
+        folder acc (name, value) = return ((name, value):acc)
+        dumpvar (name, value) = name ++ "=" ++ (show value)
