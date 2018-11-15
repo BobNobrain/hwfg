@@ -9,7 +9,7 @@ module WfgLang
     , CommandResult (..)
     ) where
 
--- import qualified Memory
+import Helpers
 
 type Identifier = String
 
@@ -30,10 +30,6 @@ showCallable n (Subprog args _) = "with " ++ (join ", " $ drop n args) ++ " do [
 showCallable n (NativeLambda c _) = "\\" ++ (join ", " $ genFakeArguments (c - n)) ++ ". [native code]"
 showCallable n (NativeSubprog c _) = "with " ++ (join ", " $ genFakeArguments (c - n)) ++ " do [native code]"
 showCallable n (NativeIOLambda c _) = "\\" ++ (join ", " $ genFakeArguments (c - n)) ++ ". [native code]"
-
-join _ [] = ""
-join _ [single] = single
-join sep (s:ss) = s ++ sep ++ (join sep ss)
 
 data Value
     = ValInt Integer
@@ -123,3 +119,4 @@ data CommandResult
     = CmdResultEmpty
     | CmdResultEmptyBreak
     | CmdResultValue Value
+    deriving (Show)
