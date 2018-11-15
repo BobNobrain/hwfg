@@ -24,6 +24,7 @@ dependencies:
 - parsec
 - hashable
 - hashtables
+- hslogger
 
 library:
   source-dirs: src
