@@ -16,6 +16,7 @@ import System.Log.Formatter (simpleLogFormatter)
 import Cli
 import Parser
 import Interpreter
+import Memory
 
 
 component = "Runner"
@@ -70,16 +71,19 @@ runWithMode (ModeRunInteractive logLevel) = do
     debugM "Initializing memory"
     memory <- createMemoryAndFill
     debugM "Starting main loop"
-    forever $ catch (readCommand "" >>= eval memory) printErr
+    forever $ catch (readCommand memory "" >>= eval memory) printErr
     where
-        readCommand str = do
+        readCommand memory str = do
             putStr (if str == "" then "wfg>" else "...>")
             hFlush stdout
             newData <- getLine
-            when (newData `elem` interactiveCmds) (execInteractiveCmd newData)
-            let fullCode = (str ++ "\n" ++ newData)
-            case parseExprOrCommand "(input)" fullCode of Left err -> readCommand fullCode
-                                                          Right eoc -> return eoc
+            if newData `elem` interactiveCmds then do
+                execInteractiveCmd memory newData
+                readCommand memory str
+            else do
+                let fullCode = (str ++ "\n" ++ newData)
+                case parseExprOrCommand "(input)" fullCode of Left err -> readCommand memory fullCode
+                                                              Right eoc -> return eoc
 
         eval memory (Right expr) = do
             debugM "Evalutating expression"
@@ -94,11 +98,12 @@ runWithMode (ModeRunInteractive logLevel) = do
         printErr :: IOException -> IO ()
         printErr e = putStrLn ("Eval error: " ++ (show e))
 
-        interactiveCmds = [":exit", ":e", ":break", ":b", ":q"]
+        interactiveCmds = [":exit", ":e", ":break", ":b", ":q", ":dump"]
 
-        execInteractiveCmd ":exit" = exitWith ExitSuccess
-        execInteractiveCmd ":e" = execInteractiveCmd ":exit"
-        execInteractiveCmd ":q" = execInteractiveCmd ":exit"
-        execInteractiveCmd ":break" = fail "Interrupted"
-        execInteractiveCmd ":b" = execInteractiveCmd ":break"
-        execInteractiveCmd c = putStrLn ("Unknown interactive command: " ++ c)
+        execInteractiveCmd _ ":exit" = exitWith ExitSuccess
+        execInteractiveCmd m ":e" = execInteractiveCmd m ":exit"
+        execInteractiveCmd m ":q" = execInteractiveCmd m ":exit"
+        execInteractiveCmd _ ":break" = fail "Interrupted"
+        execInteractiveCmd m ":b" = execInteractiveCmd m ":break"
+        execInteractiveCmd m ":dump" = Memory.dump True m >>= putStrLn
+        execInteractiveCmd _ c = putStrLn ("Unknown interactive command: " ++ c)
